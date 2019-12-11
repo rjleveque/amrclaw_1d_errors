@@ -9,6 +9,15 @@ function setplot is called to set the plot parameters.
 
 from __future__ import absolute_import
 from __future__ import print_function
+import gridtools1
+import numpy
+from clawpack.clawutil.data import ClawData
+
+amrdata = ClawData()
+amrdata.read('amr.data',force=True)
+probdata = ClawData()
+probdata.read('setprob.data',force=True)
+
 
 betal = 5.
 al = 1.
@@ -22,6 +31,25 @@ amr_linestyle = ['-','-','-','-','-','-','-','-','-','-']
 amr_plotstyle = [ma+li for ma,li in zip(amr_marker,amr_linestyle)]
 print('amr_plotstyle = ',amr_plotstyle)
 #amr_plotstyle = ['x-','s-','o-','^-','.-']
+
+maxlevels = amrdata.amr_levels_max
+amr_color = amr_color[:maxlevels]
+amr_marker = amr_marker[:maxlevels]
+amr_linestyle = amr_linestyle[:maxlevels]
+amr_plotstyle = amr_plotstyle[:maxlevels]
+
+c = ['palegreen','skyblue','salmon','cyan','thistle','yellowgreen',\
+     'gold','hotpink','cornflowerblue','lime']
+v_levels = numpy.arange(0.5,maxlevels+1,1)
+c_levels = c[:maxlevels]
+
+xout = numpy.linspace(-12,12,12000)
+tolerance = amrdata.flag_richardson_tol
+
+print('Using %i Levels with tolerance = %.6f' % (maxlevels,tolerance))
+
+xlimits = [-12,1]
+ylimits_error = [1e-7, 1.]
 
 
 #--------------------------
@@ -81,14 +109,46 @@ def setplot(plotdata=None):
     def add_grid(current_data):
         from pylab import grid
         grid(True)
-
+        
+    def color_by_level(current_data):
+        from pylab import vstack,contourf,plot,ones,arange,colorbar
+        fs = current_data.framesoln
+        pout,level = gridtools1.grid_output_1d(fs, 0, xout, return_level=True)
+        Xout = vstack((xout,xout))
+        Yout = vstack((-1.1*ones(xout.shape), 1.1*ones(xout.shape)))
+        L = vstack((level,level))
+        contourf(Xout,Yout,L,v_levels,colors=c_levels) 
+        cb = colorbar(ticks=range(1,maxlevels+1))
+        cb.set_label('AMR Level')
+        plot(xout,pout,'k')   
+        #import pdb; pdb.set_trace()
+        
+    def error_color_by_level(current_data):
+        from pylab import vstack,contourf,plot,ones,arange,colorbar,\
+                          ylim,semilogy
+        fs = current_data.framesoln
+        t = current_data.t
+        pout,level = gridtools1.grid_output_1d(fs, 0, xout, return_level=True)
+        err = abs(pout - p_true_fcn(xout, t))
+        Xout = vstack((xout,xout))
+        Yout = vstack((ylimits_error[0]*ones(xout.shape), 
+                       ylimits_error[1]*ones(xout.shape)))
+        L = vstack((level,level))
+        contourf(Xout,Yout,L,v_levels,colors=c_levels) 
+        cb = colorbar(ticks=range(1,maxlevels+1))
+        cb.set_label('AMR Level')
+        semilogy(xout,err,'k')
+        #semilogy(xout,level,'k')
+        if tolerance is not None:
+            plot(xout,tolerance*ones(xout.shape),'r--')
+        
     # Figure for q[0]
     plotfigure = plotdata.new_plotfigure(name='Pressure and Velocity', figno=1)
     plotfigure.kwargs = {'figsize': (8,8)}
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.axescmd = 'subplot(2,1,1)'   # top figure
-    plotaxes.xlimits = [-12,12]
+    plotaxes.xlimits = xlimits
     plotaxes.ylimits = [-1.1,1.1]
     plotaxes.title = 'Pressure'
     plotaxes.afteraxes = draw_interface_add_legend
@@ -107,17 +167,115 @@ def setplot(plotdata=None):
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.axescmd = 'subplot(2,1,2)'   # bottom figure
-    plotaxes.xlimits = [-12,12]
-    plotaxes.ylimits = [-10,1]
-    plotaxes.title = 'log10(Error)'
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = [1e-10,1]
+    plotaxes.title = 'abs(Error)'
     plotaxes.afteraxes = add_grid
     
     # Set up for item on these axes:
-    plotitem = plotaxes.new_plotitem(plot_type='1d')
-    plotitem.plot_var = log_error
+    plotitem = plotaxes.new_plotitem(plot_type='1d_semilogy')
+    plotitem.plot_var = abs_error
     plotitem.amr_color = amr_color
     plotitem.amr_plotstyle = amr_plotstyle
-    plotitem.amr_data_show = [0,0,0,0,1]
+    plotitem.amr_data_show = [1,1,1,1,1]
+    
+    plotfigure = plotdata.new_plotfigure(name='Pressure and Error', figno=2)
+    plotfigure.show = False
+    plotfigure.kwargs = {'figsize': (12,8)}
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.axescmd = 'subplot(2,1,1)'   # top figure
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = [-1.1,1.1]
+    plotaxes.title = 'Pressure'
+    plotaxes.beforeaxes = color_by_level
+    plotaxes.afteraxes = add_grid #draw_interface_add_legend
+
+    # Set up for item on these axes:
+    plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
+    plotitem.show = False
+    plotitem.plot_var = 0
+    plotitem.amr_color = amr_color
+    plotitem.amr_plotstyle = amr_plotstyle
+    plotitem.amr_data_show = [1,1,1]
+    plotitem.amr_kwargs = [{'markersize':5},{'markersize':4},{'markersize':3}]
+
+
+    # Figure for error
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.axescmd = 'subplot(2,1,2)'   # bottom figure
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits_error
+    plotaxes.title = 'abs(Error)'
+    plotaxes.beforeaxes = error_color_by_level
+    plotaxes.afteraxes = add_grid
+    
+    # Set up for item on these axes:
+    plotitem = plotaxes.new_plotitem(plot_type='1d_semilogy')
+    plotitem.show = False
+    plotitem.plot_var = abs_error
+    plotitem.amr_color = amr_color
+    plotitem.amr_plotstyle = amr_plotstyle
+    plotitem.amr_data_show = [1,1,1,1,1]
+    
+
+    def plot_finest(current_data):
+        from pylab import vstack,contourf,plot,ones,arange,colorbar,\
+                          xlim,ylim,semilogy,figure,title,clf,subplot,show,draw,\
+                          tight_layout,ylabel,grid
+        
+        fs = current_data.framesoln
+        t = current_data.t
+        print('+++ plot_finest at t = %.4f' % t)
+        pout,level = gridtools1.grid_output_1d(fs, 0, xout, return_level=True)
+        err = abs(pout - p_true_fcn(xout, t))
+        Xout = vstack((xout,xout))
+        L = vstack((level,level))
+        figure(3, figsize=(12,8))
+        clf()
+        
+        subplot(311)
+        Yout = vstack((-1.1*ones(xout.shape), 1.1*ones(xout.shape)))
+        contourf(Xout,Yout,L,v_levels,colors=c_levels) 
+        cb = colorbar(ticks=range(1,maxlevels+1))
+        cb.set_label('AMR Level')
+        plot(xout,pout,'k')
+        xlim(xlimits)
+        ylim(-1.1,1.1)
+        title('Pressure at t = %.4f' % t)
+        
+        subplot(312)
+        Yout = vstack((ylimits_error[0]*ones(xout.shape), 
+                       ylimits_error[1]*ones(xout.shape)))
+        contourf(Xout,Yout,L,v_levels,colors=c_levels) 
+        cb = colorbar(ticks=range(1,maxlevels+1))
+        cb.set_label('AMR Level')
+        semilogy(xout,err,'k')
+        if tolerance is not None:
+            plot(xout,tolerance*ones(xout.shape),'r--')
+        xlim(xlimits)
+        ylim(ylimits_error)
+        ylabel('abs(error)')
+        grid(True)
+
+        subplot(313)
+        Yout = vstack((0*ones(xout.shape), (maxlevels+1)*ones(xout.shape)))
+        contourf(Xout,Yout,L,v_levels,colors=c_levels) 
+        cb = colorbar(ticks=range(1,maxlevels+1))
+        cb.set_label('AMR Level')
+        plot(xout,level,'k')
+        xlim(xlimits)
+        ylim(0,maxlevels+1)
+        ylabel('AMR Level')
+        tight_layout()
+        grid(True)
+        draw()
+                
+    plotfigure = plotdata.new_plotfigure(name='finest', figno=3)
+    plotfigure.kwargs = {'figsize': (12,8)}
+    plotdata.afterframe = plot_finest
     
     
     # Figure for inner product, q[2]
@@ -156,7 +314,7 @@ def setplot(plotdata=None):
     
     # Set up for item on these axes:
     plotitem = plotaxes.new_plotitem(plot_type='1d')
-    plotitem.plot_var = plot_error
+    plotitem.plot_var = 0 #plot_error
     plotitem.amr_color = amr_color
     plotitem.amr_plotstyle = amr_plotstyle
     plotitem.amr_data_show = [1,1,1,1,1]
@@ -216,18 +374,14 @@ def p_true_fcn(x,t):
     xpct = x + t
     xmct = x - t
     p_true = al/(1+exp(-betal*(xmct-x1)) + exp(betal*(xmct-x2))) \
-             * sin(0.5*xmct**2)
+             * sin(0.25*abs(xmct)**2.5)
     return p_true
     
-def log_error(current_data):
+def abs_error(current_data):
     from numpy import abs, where, log10, exp, sin
     t = current_data.t
     p = current_data.q[0,:]
     x = current_data.x
-    #xpct = x + t
-    #xmct = x - t
-    #p_true = al/(1+exp(-betal*(x-x1)) + exp(betal*(x-x2))) * sin(0.5d0*xmct**2)
     p_true = p_true_fcn(x,t)
     abs_err = abs(p - p_true)
-    log_err = where(abs_err > 1e-15, log10(abs_err), -15)
-    return log_err
+    return abs_err

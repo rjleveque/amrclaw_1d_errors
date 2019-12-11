@@ -55,6 +55,7 @@ SOURCES = \
   setprob.f \
   setaux.f \
   $(CLAW)/riemann/src/rp1_acoustics_variable.f90 \
+  #errf1.f \
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:

@@ -71,7 +71,7 @@ def setrun(claw_pkg='amrclaw'):
     clawdata.upper[0] = 12.           # xupper
     
     # Number of grid cells:
-    clawdata.num_cells[0] = 120      # mx
+    clawdata.num_cells[0] = 480      # mx
     
 
     # ---------------
@@ -119,8 +119,8 @@ def setrun(claw_pkg='amrclaw'):
     if clawdata.output_style==1:
         # Output ntimes frames at equally spaced times up to tfinal:
         # Can specify num_output_times = 0 for no output
-        clawdata.num_output_times = 2 #24
-        clawdata.tfinal = 0.5 #12.0
+        clawdata.num_output_times = 4 #16
+        clawdata.tfinal = 1. #8.0
         clawdata.output_t0 = True  # output at initial (or restart) time?
         
     elif clawdata.output_style == 2:
@@ -131,7 +131,7 @@ def setrun(claw_pkg='amrclaw'):
     elif clawdata.output_style == 3:
         # Output every step_interval timesteps over total_steps timesteps:
         clawdata.output_step_interval = 1
-        clawdata.total_steps = 10
+        clawdata.total_steps = 5
         clawdata.output_t0 = True  # output at initial (or restart) time?
         
 
@@ -149,7 +149,7 @@ def setrun(claw_pkg='amrclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 0
+    clawdata.verbosity = 1
     
     
 
@@ -163,7 +163,7 @@ def setrun(claw_pkg='amrclaw'):
     
     # Initial time step for variable dt.  
     # (If dt_variable==0 then dt=dt_initial for all steps)
-    clawdata.dt_initial = 0.1e-1
+    clawdata.dt_initial = 0.045
     
     # Max time step to be allowed if variable dt used:
     clawdata.dt_max = 1.e9
@@ -196,8 +196,8 @@ def setrun(claw_pkg='amrclaw'):
     #   2 or 'superbee' ==> superbee
     #   3 or 'vanleer'  ==> van Leer
     #   4 or 'mc'       ==> MC limiter
-    clawdata.limiter = ['mc','mc']
-    #clawdata.limiter = [0,0]
+    #clawdata.limiter = ['mc','mc']
+    clawdata.limiter = [0,0]
     
     clawdata.use_fwaves = False    # True ==> use f-wave version of algorithms
     
@@ -283,7 +283,9 @@ def setrun(claw_pkg='amrclaw'):
     
     # Flag for refinement based on Richardson error estimater:
     amrdata.flag_richardson = True
-    amrdata.flag_richardson_tol = 1e-5   # suggested if using adjoint-error
+    amrdata.flag_richardson_tol = 0.00005 # for original
+    #amrdata.flag_richardson_tol = 0.05 # when flagging on LTE
+
     
     # Flag for refinement using routine flag2refine:
     amrdata.flag2refine = False
@@ -310,7 +312,7 @@ def setrun(claw_pkg='amrclaw'):
     rundata.regiondata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2]
-    rundata.regiondata.regions.append([5,5,0,0.2,-8,8])
+    #rundata.regiondata.regions.append([5,5,0,0.2,-8,8])
     
     #------------------------------------------------------------------
     # Adjoint specific data:

@@ -41,7 +41,7 @@ c    .            + al*dexp(-betal*(xcell+5.0d0)**2) * dsin(freql*xcell)
 
          q(1,i) = al/(1.d0 + exp(-beta*(xcell-x1)) + 
      .                       exp(beta*(xcell-x2))) * 
-     .            sin(0.5d0*abs(xcell)**2)
+     .            sin(0.25d0*abs(xcell)**2.5d0)
          q(2,i) = q(1,i)
 
  150  continue
