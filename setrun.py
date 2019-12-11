@@ -114,13 +114,13 @@ def setrun(claw_pkg='amrclaw'):
     # Specify at what times the results should be written to fort.q files.
     # Note that the time integration stops after the final output time.
  
-    clawdata.output_style = 1
+    clawdata.output_style = 3
  
     if clawdata.output_style==1:
         # Output ntimes frames at equally spaced times up to tfinal:
         # Can specify num_output_times = 0 for no output
-        clawdata.num_output_times = 4 #16
-        clawdata.tfinal = 1. #8.0
+        clawdata.num_output_times = 12 #16
+        clawdata.tfinal = 3. #8.0
         clawdata.output_t0 = True  # output at initial (or restart) time?
         
     elif clawdata.output_style == 2:
@@ -131,7 +131,7 @@ def setrun(claw_pkg='amrclaw'):
     elif clawdata.output_style == 3:
         # Output every step_interval timesteps over total_steps timesteps:
         clawdata.output_step_interval = 1
-        clawdata.total_steps = 5
+        clawdata.total_steps = 30
         clawdata.output_t0 = True  # output at initial (or restart) time?
         
 
@@ -265,11 +265,11 @@ def setrun(claw_pkg='amrclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 10
+    amrdata.amr_levels_max = 8 #10
     
     # List of refinement ratios at each level (length at least amr_level_max-1)
-    amrdata.refinement_ratios_x = [2,2,2,2,2,2,2,2,2]
-    amrdata.refinement_ratios_t = [2,2,2,2,2,2,2,2,2]
+    amrdata.refinement_ratios_x = [4,4,2,2,2,2,2,2,2]
+    amrdata.refinement_ratios_t = [4,4,2,2,2,2,2,2,2]
     
     
     # Specify type of each aux variable in clawdata.auxtype.
